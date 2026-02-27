@@ -34,7 +34,7 @@ export function Navbar() {
     router.replace(pathname, { locale });
   };
 
-  const displayXP = Math.max(xp, onChainXP);
+  const displayXP = onChainXP;
 
   return (
     <nav className="fixed top-0 w-full z-50 border-b border-[#2E2E36] bg-[#0A0A0F]/80 backdrop-blur-md">
