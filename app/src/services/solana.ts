@@ -50,20 +50,30 @@ class SolanaServiceImpl {
 
   async getXPBalance(walletAddress: string): Promise<number> {
     try {
-      const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
-        new PublicKey(walletAddress),
+      const ownerPubkey = new PublicKey(walletAddress);
+      const mintStr = XP_TOKEN_MINT.toBase58();
+
+      // Try standard SPL Token program first (filter by mint)
+      const stdAccounts = await this.connection.getParsedTokenAccountsByOwner(
+        ownerPubkey,
+        { mint: XP_TOKEN_MINT }
+      );
+      if (stdAccounts.value.length > 0) {
+        return stdAccounts.value[0]?.account.data.parsed.info.tokenAmount.uiAmount || 0;
+      }
+
+      // Fallback: Try Token-2022 program
+      const t22Accounts = await this.connection.getParsedTokenAccountsByOwner(
+        ownerPubkey,
         { programId: TOKEN_2022_PROGRAM_ID }
       );
-      
-      const account = tokenAccounts.value.find(
-        (acc) => acc.account.data.parsed.info.mint === XP_TOKEN_MINT.toBase58()
+      const t22Account = t22Accounts.value.find(
+        (acc) => acc.account.data.parsed.info.mint === mintStr
       );
-      
-      const balance = account?.account.data.parsed.info.tokenAmount.uiAmount || 0;
-      return balance;
+      return t22Account?.account.data.parsed.info.tokenAmount.uiAmount || 0;
     } catch (error) {
       console.error("Error fetching XP balance:", error);
-      return 0; // Return 0 on error/mock
+      return 0;
     }
   }
 
